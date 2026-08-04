@@ -7,7 +7,7 @@
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Secure admin interface for resource management"
+              "text": "Owner access isn't set up yet."
             }
           }
         ],

@@ -7,13 +7,24 @@
           {
             "method": "sendMessage",
             "payload": {
-              "text": "Open natural language search interface with filters"
+              "text": "Tell me what you want to study. You can name a topic, class, or resource type."
             }
           }
         ],
         "send": {
           "callback": "search:init"
         }
+      },
+      {
+        "send": { "text": "algebra worksheets" },
+        "expect": [
+          {
+            "method": "sendMessage",
+            "payload": {
+              "text": "I couldn’t find a match yet. Try a broader topic or browse by subject."
+            }
+          }
+        ]
       }
     ]
   }

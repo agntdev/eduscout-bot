@@ -1,17 +1,8 @@
 import { Composer } from "grammy";
-
-// SCAFFOLD — generated from the bot blueprint BEFORE the agent runs.
-// Keep a LIVE registration (.command / .callbackQuery / …) so this feature is
-// never an empty stub. Replace the reply body with real logic + copy; if you
-// change the user-facing text, update tests/specs to match EXACTLY.
-// Do NOT rewrite src/bot.ts — buildBot() already auto-loads this module.
-// Menu: wire this into /start via registerMainMenuItem({ label: "Bookmarks", data: "bookmarks:list" }) if the toolkit exposes it.
-
-const composer = new Composer();
-
-composer.callbackQuery("bookmarks:list", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply("Show saved resources with sync status");
-});
-
+import type { Ctx } from "../bot.js";
+import { inlineButton, inlineKeyboard, registerMainMenuItem } from "../toolkit/index.js";
+import { bookmarks } from "../study-data.js";
+registerMainMenuItem({ label: "🔖 Bookmarks", data: "bookmarks:list", order: 30 });
+const composer = new Composer<Ctx>();
+composer.callbackQuery("bookmarks:list", async (ctx) => { await ctx.answerCallbackQuery(); const saved = await bookmarks(ctx); if (!saved.length) { await ctx.editMessageText("No bookmarks yet — save a resource to keep it handy across your devices.", { reply_markup: inlineKeyboard([[inlineButton("Browse resources", "home:main")]]) }); return; } await ctx.editMessageText("Your saved resources are synced and ready.", { reply_markup: inlineKeyboard([...saved.map((item) => [inlineButton(item.title, `resource:${item.id}`)]),[inlineButton("Back to menu", "menu:main")]]) }); });
 export default composer;
