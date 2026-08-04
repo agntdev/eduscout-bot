@@ -5,9 +5,9 @@
       {
         "expect": [
           {
-            "method": "sendMessage",
+            "method": "editMessageText",
             "payload": {
-              "text": "Show categorized resource entry points and search bar"
+              "text": "Find something useful for today’s study session."
             }
           }
         ],

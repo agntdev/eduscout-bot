@@ -1,17 +1,13 @@
 import { Composer } from "grammy";
+import type { Ctx } from "../bot.js";
+import { inlineButton, inlineKeyboard, registerMainMenuItem } from "../toolkit/index.js";
+import { resources } from "../study-data.js";
 
-// SCAFFOLD — generated from the bot blueprint BEFORE the agent runs.
-// Keep a LIVE registration (.command / .callbackQuery / …) so this feature is
-// never an empty stub. Replace the reply body with real logic + copy; if you
-// change the user-facing text, update tests/specs to match EXACTLY.
-// Do NOT rewrite src/bot.ts — buildBot() already auto-loads this module.
-// Menu: wire this into /start via registerMainMenuItem({ label: "Search", data: "search:init" }) if the toolkit exposes it.
-
-const composer = new Composer();
-
-composer.callbackQuery("search:init", async (ctx) => {
-  await ctx.answerCallbackQuery();
-  await ctx.reply("Open natural language search interface with filters");
-});
-
+registerMainMenuItem({ label: "🔎 Search", data: "search:init", order: 20 });
+const composer = new Composer<Ctx>();
+function apiKey(ctx: Ctx): string | undefined { const env = (ctx as Ctx & { env?: Record<string, unknown> }).env; const key = env?.OPENAI_API_KEY ?? (typeof process === "undefined" ? undefined : process.env.OPENAI_API_KEY); return typeof key === "string" && key ? key : undefined; }
+async function rankedQuery(ctx: Ctx, query: string): Promise<string> { const key = apiKey(ctx); if (!key) return query; try { const response = await fetch("https://api.openai.com/v1/responses", { method: "POST", headers: { authorization: `Bearer ${key}`, "content-type": "application/json" }, body: JSON.stringify({ model: "gpt-4.1-mini", input: `Turn this student resource search into up to five plain keywords. Return only words: ${query}`, max_output_tokens: 40 }) }); if (!response.ok) return query; const body = await response.json() as { output_text?: string }; return body.output_text?.slice(0, 180) || query; } catch { return query; } }
+composer.callbackQuery("search:init", async (ctx) => { await ctx.answerCallbackQuery(); ctx.session.step = "search"; await ctx.reply("Tell me what you want to study. You can name a topic, class, or resource type.", { reply_markup: { force_reply: true, input_field_placeholder: "Try ‘algebra worksheets’" } }); });
+composer.callbackQuery("search:filters", async (ctx) => { await ctx.answerCallbackQuery(); await ctx.reply("Use Browse to filter by class or subject, or type a new search.", { reply_markup: inlineKeyboard([[inlineButton("Browse filters", "home:main")]]) }); });
+composer.on("message:text", async (ctx, next) => { if (ctx.session.step !== "search") return next(); const query = ctx.message.text.trim(); if (query.length < 2 || query.length > 160) { await ctx.reply("Use a short topic or subject, then try again."); return; } ctx.session.step = undefined; await ctx.replyWithChatAction("typing"); const terms = (await rankedQuery(ctx, query)).split(/\s+/).filter(Boolean).slice(0, 5); const found = await resources(ctx, `WHERE ${terms.map(() => "(lower(title) LIKE ? OR lower(subject) LIKE ? OR lower(class_name) LIKE ?)").join(" AND ")}`, terms.flatMap((term) => { const v = `%${term.toLowerCase()}%`; return [v,v,v]; })); if (!found.length) { await ctx.reply("I couldn’t find a match yet. Try a broader topic or browse by subject.", { reply_markup: inlineKeyboard([[inlineButton("Browse subjects", "browse:subject")],[inlineButton("Search again", "search:init")]]) }); return; } await ctx.reply("Here are the closest study resources.", { reply_markup: inlineKeyboard([...found.slice(0, 8).map((item) => [inlineButton(item.title, `resource:${item.id}`)]),[inlineButton("Filter results", "search:filters")]]) }); });
 export default composer;

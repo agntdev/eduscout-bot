@@ -5,9 +5,9 @@
       {
         "expect": [
           {
-            "method": "sendMessage",
+            "method": "editMessageText",
             "payload": {
-              "text": "Show saved resources with sync status"
+              "text": "No bookmarks yet — save a resource to keep it handy across your devices."
             }
           }
         ],

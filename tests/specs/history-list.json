@@ -5,9 +5,9 @@
       {
         "expect": [
           {
-            "method": "sendMessage",
+            "method": "editMessageText",
             "payload": {
-              "text": "Show recently viewed resources with progress tracking"
+              "text": "No study history yet — open a resource and it’ll appear here."
             }
           }
         ],
